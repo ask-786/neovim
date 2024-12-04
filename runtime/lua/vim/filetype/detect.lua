@@ -790,7 +790,7 @@ function M.html(_, bufnr)
   end
 
   local angular_json_path = vim.fn.getcwd() .. "/angular.json"
-  if vim.fn.filereadable(angular_json_path) == 1 then
+  if fn.filereadable(angular_json_path) == 1 then
     return 'htmlangular'
   end
 

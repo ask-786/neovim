@@ -1571,6 +1571,48 @@ stack traceback:
       end,
     })
   end)
+
+  it('g< mapping shows recent messages', function()
+    command('echo "foo" | echo "bar"')
+    local s1 = [[
+      ^                         |
+      {1:~                        }|*4
+    ]]
+    screen:expect({
+      grid = s1,
+      messages = {
+        {
+          content = { { 'bar' } },
+          history = false,
+          kind = 'echo',
+        },
+      },
+    })
+    feed(':messages<CR>g<lt>')
+    screen:expect({
+      grid = [[
+        ^                         |
+        {1:~                        }|*4
+      ]],
+      messages = {
+        {
+          content = { { 'Press ENTER or type command to continue', 6, 18 } },
+          history = false,
+          kind = 'return_prompt',
+        },
+      },
+      msg_history = {
+        {
+          content = { { 'foo' } },
+          kind = 'echo',
+        },
+        {
+          content = { { 'bar' } },
+          kind = 'echo',
+        },
+      },
+    })
+  end)
 end)
 
 describe('ui/builtin messages', function()
@@ -2424,6 +2466,7 @@ end)
 
 describe('ui/msg_puts_printf', function()
   it('output multibyte characters correctly', function()
+    skip(not t.translations_enabled(), 'Nvim not built with ENABLE_TRANSLATIONS')
     local screen
     local cmd = ''
     local locale_dir = test_build_dir .. '/share/locale/ja/LC_MESSAGES'

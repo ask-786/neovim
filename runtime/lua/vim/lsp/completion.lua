@@ -1,3 +1,25 @@
+--- @brief
+--- The `vim.lsp.completion` module enables insert-mode completion driven by an LSP server. Call
+--- `enable()` to make it available through Nvim builtin completion (via the |CompleteDone| event).
+--- Specify `autotrigger=true` to activate "auto-completion" when you type any of the server-defined
+--- `triggerCharacters`.
+---
+--- Example: activate LSP-driven auto-completion:
+--- ```lua
+--- vim.lsp.start({
+---   name = 'ts_ls',
+---   cmd = …,
+---   on_attach = function(client, bufnr)
+---     vim.lsp.completion.enable(true, client.id, bufnr, {
+---       autotrigger = true,
+---       convert = function(item)
+---         return { abbr = item.label:gsub('%b()', '') }
+---       end,
+---     })
+---   end,
+--- })
+--- ```
+
 local M = {}
 
 local api = vim.api
@@ -132,7 +154,7 @@ end
 --- @return string
 local function get_completion_word(item, prefix, match)
   if item.insertTextFormat == protocol.InsertTextFormat.Snippet then
-    if item.textEdit then
+    if item.textEdit or (item.insertText and item.insertText ~= '') then
       -- Use label instead of text if text has different starting characters.
       -- label is used as abbr (=displayed), but word is used for filtering
       -- This is required for things like postfix completion.
@@ -154,8 +176,6 @@ local function get_completion_word(item, prefix, match)
       else
         return word
       end
-    elseif item.insertText and item.insertText ~= '' then
-      return parse_snippet(item.insertText)
     else
       return item.label
     end
@@ -751,7 +771,7 @@ function M.enable(enable, client_id, bufnr, opts)
   end
 end
 
---- Trigger LSP completion in the current buffer.
+--- Triggers LSP completion once in the current buffer.
 function M.trigger()
   local bufnr = api.nvim_get_current_buf()
   local clients = (buf_handles[bufnr] or {}).clients or {}

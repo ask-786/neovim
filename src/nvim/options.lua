@@ -1460,6 +1460,40 @@ local options = {
       varname = 'p_cfu',
     },
     {
+      abbreviation = 'cfc',
+      defaults = '',
+      values = { 'keyword', 'files', 'whole_line' },
+      flags = true,
+      deny_duplicates = true,
+      desc = [=[
+        A comma-separated list of strings to enable fuzzy collection for
+        specific |ins-completion| modes, affecting how matches are gathered
+        during completion.  For specified modes, fuzzy matching is used to
+        find completion candidates instead of the standard prefix-based
+        matching.  This option can contain the following values:
+
+        keyword		keywords in the current file	|i_CTRL-X_CTRL-N|
+        		keywords with flags ".", "w",	|i_CTRL-N| |i_CTRL-P|
+        		"b", "u", "U" and "k{dict}" in 'complete'
+        		keywords in 'dictionary'	|i_CTRL-X_CTRL-K|
+
+        files		file names			|i_CTRL-X_CTRL-F|
+
+        whole_line	whole lines			|i_CTRL-X_CTRL-L|
+
+        When using the 'completeopt' "longest" option value, fuzzy collection
+        can identify the longest common string among the best fuzzy matches
+        and insert it automatically.
+      ]=],
+      full_name = 'completefuzzycollect',
+      list = 'onecomma',
+      scope = { 'global' },
+      short_desc = N_('use fuzzy collection for specific completion modes'),
+      type = 'string',
+      varname = 'p_cfc',
+      flags_varname = 'cfc_flags',
+    },
+    {
       abbreviation = 'cia',
       cb = 'did_set_completeitemalign',
       defaults = 'abbr,kind,menu',
@@ -1505,10 +1539,12 @@ local options = {
            fuzzy    Enable |fuzzy-matching| for completion candidates. This
         	    allows for more flexible and intuitive matching, where
         	    characters can be skipped and matches can be found even
-        	    if the exact sequence is not typed.  Only makes a
-        	    difference how completion candidates are reduced from the
-        	    list of alternatives, but not how the candidates are
-        	    collected (using different completion types).
+        	    if the exact sequence is not typed.  Note: This option
+        	    does not affect the collection of candidate list, it only
+        	    controls how completion candidates are reduced from the
+        	    list of alternatives.  If you want to use |fuzzy-matching|
+        	    to gather more alternatives for your candidate list,
+        	    see |'completefuzzycollect'|.
 
            longest  Only insert the longest common text of the matches.  If
         	    the menu is displayed you can use CTRL-L to add more
@@ -2152,7 +2188,7 @@ local options = {
     {
       abbreviation = 'dip',
       cb = 'did_set_diffopt',
-      defaults = 'internal,filler,closeoff,linematch:40',
+      defaults = 'internal,filler,closeoff,inline:simple,linematch:40',
       -- Keep this in sync with diffopt_changed().
       values = {
         'filler',
@@ -2171,6 +2207,7 @@ local options = {
         'internal',
         'indent-heuristic',
         { 'algorithm:', { 'myers', 'minimal', 'patience', 'histogram' } },
+        { 'inline:', { 'none', 'simple', 'char', 'word' } },
         'linematch:',
       },
       deny_duplicates = true,
@@ -2235,6 +2272,24 @@ local options = {
         	indent-heuristic
         			Use the indent heuristic for the internal
         			diff library.
+
+        	inline:{text}	Highlight inline differences within a change.
+        			See |view-diffs|.  Supported values are:
+
+        			none    Do not perform inline highlighting.
+        			simple  Highlight from first different
+        				character to the last one in each
+        				line.  This is the default if no
+        				`inline:` value is set.
+        			char    Use internal diff to perform a
+        				character-wise diff and highlight the
+        				difference.
+        			word    Use internal diff to perform a
+        				|word|-wise diff and highlight the
+        				difference.  Non-alphanumeric
+        				multi-byte characters such as emoji
+        				and CJK characters are considered
+        				individual words.
 
         	internal	Use the internal diff library.  This is
         			ignored when 'diffexpr' is set.  *E960*
@@ -6374,6 +6429,21 @@ local options = {
       varname = 'p_ph',
     },
     {
+      abbreviation = 'pmw',
+      defaults = 0,
+      desc = [=[
+        Maximum width for the popup menu (|ins-completion-menu|).  When zero,
+        there is no maximum width limit, otherwise the popup menu will never be
+        wider than this value.  Truncated text will be indicated by "..." at the
+        end.  Takes precedence over 'pumwidth'.
+      ]=],
+      full_name = 'pummaxwidth',
+      scope = { 'global' },
+      short_desc = N_('maximum width of the popup menu'),
+      type = 'number',
+      varname = 'p_pmw',
+    },
+    {
       abbreviation = 'pw',
       defaults = 15,
       desc = [=[
@@ -8091,11 +8161,10 @@ local options = {
         It may also be a comma-separated list of names.  A count before the
         |zg| and |zw| commands can be used to access each.  This allows using
         a personal word list file and a project word list file.
-        When a word is added while this option is empty Vim will set it for
-        you: Using the first directory in 'runtimepath' that is writable.  If
-        there is no "spell" directory yet it will be created.  For the file
-        name the first language name that appears in 'spelllang' is used,
-        ignoring the region.
+        When a word is added while this option is empty Nvim will use
+        (and auto-create) `stdpath('data')/spell/`. For the file name the
+        first language name that appears in 'spelllang' is used, ignoring the
+        region.
         The resulting ".spl" file will be used for spell checking, it does not
         have to appear in 'spelllang'.
         Normally one file is used for all regions, but you can add the region
@@ -10190,23 +10259,23 @@ local options = {
     },
     {
       defaults = { if_true = '' },
-      cb = 'did_set_winborder',
-      values = { '', 'double', 'single', 'shadow', 'rounded', 'solid', 'none' },
+      values = { '', 'double', 'single', 'shadow', 'rounded', 'solid', 'bold', 'none' },
       desc = [=[
         Defines the default border style of floating windows. The default value
         is empty, which is equivalent to "none". Valid values include:
+        - "bold": Bold line box.
+        - "double": Double-line box.
         - "none": No border.
-        - "single": A single line box.
-        - "double": A double line box.
         - "rounded": Like "single", but with rounded corners ("╭" etc.).
+        - "shadow": Drop shadow effect, by blending with the background.
+        - "single": Single-line box.
         - "solid": Adds padding by a single whitespace cell.
-        - "shadow": A drop shadow effect by blending with the background.
       ]=],
       full_name = 'winborder',
       scope = { 'global' },
       short_desc = N_('border of floating window'),
       type = 'string',
-      varname = 'p_winbd',
+      varname = 'p_winborder',
     },
     {
       abbreviation = 'wi',

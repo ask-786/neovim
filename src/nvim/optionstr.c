@@ -84,6 +84,7 @@ void didset_string_options(void)
   check_str_opt(kOptCasemap, NULL);
   check_str_opt(kOptBackupcopy, NULL);
   check_str_opt(kOptBelloff, NULL);
+  check_str_opt(kOptCompletefuzzycollect, NULL);
   check_str_opt(kOptCompleteopt, NULL);
   check_str_opt(kOptSessionoptions, NULL);
   check_str_opt(kOptViewoptions, NULL);
@@ -1014,6 +1015,16 @@ int expand_set_diffopt(optexpand_T *args, int *numMatches, char ***matches)
       return expand_set_opt_string(args,
                                    opt_dip_algorithm_values,
                                    ARRAY_SIZE(opt_dip_algorithm_values) - 1,
+                                   numMatches,
+                                   matches);
+    }
+    // Within "inline:", we have a subgroup of possible options.
+    const size_t inline_len = strlen("inline:");
+    if (xp->xp_pattern - args->oe_set_arg >= (int)inline_len
+        && strncmp(xp->xp_pattern - inline_len, "inline:", inline_len) == 0) {
+      return expand_set_opt_string(args,
+                                   opt_dip_inline_values,
+                                   ARRAY_SIZE(opt_dip_inline_values) - 1,
                                    numMatches,
                                    matches);
     }
@@ -2000,15 +2011,6 @@ const char *did_set_winhighlight(optset_T *args)
   win_T *win = (win_T *)args->os_win;
   char **varp = (char **)args->os_varp;
   if (!parse_winhl_opt(*varp, varp == &win->w_p_winhl ? win : NULL)) {
-    return e_invarg;
-  }
-  return NULL;
-}
-
-/// The 'winborder' option is changed.
-const char *did_set_winborder(optset_T *args)
-{
-  if (opt_strings_flags(p_winbd, opt_winborder_values, NULL, true) != OK) {
     return e_invarg;
   }
   return NULL;

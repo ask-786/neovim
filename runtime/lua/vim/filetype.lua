@@ -380,6 +380,7 @@ local extension = {
   dat = detect.dat,
   Dat = detect.dat,
   DAT = detect.dat,
+  dax = 'dax',
   dcd = 'dcd',
   decl = detect.decl,
   dec = detect.decl,
@@ -952,6 +953,7 @@ local extension = {
   ppd = 'ppd',
   it = 'ppwiz',
   ih = 'ppwiz',
+  pq = 'pq',
   action = 'privoxy',
   prg = detect.prg,
   Prg = detect.prg,
@@ -2263,6 +2265,8 @@ local pattern = {
     ['^named.*%.conf$'] = 'named',
     ['^rndc.*%.conf$'] = 'named',
     ['/openvpn/.*/.*%.conf$'] = 'openvpn',
+    ['/pipewire/.*%.conf$'] = 'spajson',
+    ['/wireplumber/.*%.conf$'] = 'spajson',
     ['/%.ssh/.*%.conf$'] = 'sshconfig',
     ['^%.?tmux.*%.conf$'] = 'tmux',
     ['^%.?tmux.*%.conf'] = { 'tmux', { priority = -1 } },
@@ -2563,6 +2567,15 @@ local function normalize_path(path, as_pattern)
     end
   end
   return normal
+end
+
+local abspath = function(x)
+  return fn.fnamemodify(x, ':p')
+end
+if fn.has('win32') == 1 then
+  abspath = function(x)
+    return (fn.fnamemodify(x, ':p'):gsub('\\', '/'))
+  end
 end
 
 --- @class vim.filetype.add.filetypes
@@ -2873,7 +2886,7 @@ function M.match(args)
     name = normalize_path(name)
 
     -- First check for the simple case where the full path exists as a key
-    local path = fn.fnamemodify(name, ':p')
+    local path = abspath(name)
     ft, on_detect = dispatch(filename[path], path, bufnr)
     if ft then
       return ft, on_detect

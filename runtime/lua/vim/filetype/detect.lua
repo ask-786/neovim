@@ -753,12 +753,14 @@ function M.html(_, bufnr)
   --   return 'htmlangular'
   -- end
 
+  local angular_json_path = vim.fn.getcwd() .. '/angular.json'
+
   for _, line in ipairs(getlines(bufnr, 1, 40)) do
     if
       matchregex(
         line,
         [[@\(if\|for\|defer\|switch\)\|\*\(ngIf\|ngFor\|ngSwitch\|ngTemplateOutlet\)\|ng-template\|ng-content]]
-      )
+      ) or vim.uv.fs_stat(angular_json_path)
     then
       return 'htmlangular'
     elseif matchregex(line, [[\<DTD\s\+XHTML\s]]) then
@@ -773,11 +775,6 @@ function M.html(_, bufnr)
     elseif findany(line, { '<extend', '<super>' }) then
       return 'superhtml'
     end
-  end
-
-  local angular_json_path = vim.fn.getcwd() .. "/angular.json"
-  if fn.filereadable(angular_json_path) == 1 then
-    return 'htmlangular'
   end
 
   return 'html'
